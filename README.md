@@ -1,36 +1,50 @@
-# SL Bot Master + Agent — pacote inicial
+# SL Bot Master + Agent — instalação e Render
 
-Este pacote junta o painel web Master e o serviço Agent num projeto só, mantendo os dois serviços separados por segurança e arquitetura. O Master fornece a interface gráfica; o Agent controla a sessão do bot no Second Life.
+Este repositório contém o painel Master, o Agent e a configuração de implantação. Os serviços são separados.
 
-## Iniciar com Docker (recomendado)
+## Implantar no Render (recomendado)
 
-Requisitos: Docker Desktop com Docker Compose.
+1. Envie todos os arquivos desta pasta para a raiz do seu repositório GitHub. O arquivo `render.yaml` precisa ficar na raiz, no mesmo nível das pastas `master/` e `agent/`.
+2. No Render, abra **New → Blueprint** e conecte o repositório.
+3. O Blueprint cria `sl-bot-master`, `sl-bot-agent` e o banco PostgreSQL. Ele configura automaticamente os diretórios corretos: `master` para o painel e `agent` para o Agent.
+4. Espere os dois serviços e o banco terminarem de criar. O Master gera `ADMIN_PASSWORD`, `SESSION_SECRET` e `DATA_ENCRYPTION_KEY` como variáveis secretas.
+5. Abra o serviço `sl-bot-master` → **Environment** para consultar/definir `ADMIN_PASSWORD`; use essa senha para entrar no painel. Não publique segredos em logs ou no GitHub.
+6. Abra a URL pública do Master e entre. O Agent deve aparecer em **Servidores** para aprovação.
+
+### Se preferir configurar serviços manualmente
+
+**Master (Web Service)**
+- Root Directory: `master`
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Health Check Path: `/health`
+- Variáveis obrigatórias: `NODE_ENV=production`, `DATABASE_URL` (URL interna de um PostgreSQL), `ADMIN_PASSWORD`, `SESSION_SECRET`, `DATA_ENCRYPTION_KEY`.
+
+**Agent (Web Service)**
+- Root Directory: `agent`
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Health Check Path: `/health`
+- Variáveis: `MASTER_HOST` = hostname do serviço Master, sem `https://` (ex.: `sl-bot-master.onrender.com`); `AGENT_KEY` = identificador único do Agent. O código também aceita `MASTER_URL` como URL completa.
+
+O erro `ENOENT ... /src/package.json` acontece quando o Root Directory está vazio ou incorreto. Não basta configurar apenas `npm install` e `npm start`: cada serviço deve executar na sua pasta. O Blueprint da raiz resolve isso.
+
+## Executar localmente com Docker
 
 1. Copie `.env.example` para `.env`.
-2. Edite `.env` e defina valores próprios para `ADMIN_PASSWORD`, `SESSION_SECRET` e `DATA_ENCRYPTION_KEY` (não publique esses valores).
-3. Na pasta do projeto, execute `docker compose up --build -d`.
-4. Abra `http://localhost:10000` (ou a porta configurada em `MASTER_PORT`).
-5. Entre com a senha que colocou em `ADMIN_PASSWORD`.
-6. Abra **Servidores** no painel e aprove o Agent quando aparecer. Depois, crie/configure o bot e atribua um servidor disponível.
+2. Troque `ADMIN_PASSWORD`, `SESSION_SECRET` e `DATA_ENCRYPTION_KEY` por valores fortes e únicos.
+3. Execute `docker compose up --build -d`.
+4. Abra `http://localhost:10000`.
+5. Acompanhe: `docker compose logs -f master agent`. Para desligar: `docker compose down`.
 
-Para acompanhar a inicialização: `docker compose logs -f master agent`.
-Para desligar: `docker compose down`. Para apagar também o banco local, use `docker compose down -v` (isso apaga os dados salvos).
+## Importante
 
-## O que está incluído
+- O Agent precisa ser aprovado no painel e atribuído a uma configuração de bot antes de controlar uma sessão.
+- Para login no Second Life, use uma conta de bot válida e siga os termos da plataforma. Nunca comite credenciais.
+- A busca global de avatares depende dos recursos públicos disponíveis e pode não retornar dados estruturados; o link oficial continua sendo a alternativa.
+- O plano gratuito do Render pode suspender serviços por inatividade, ter limites de uso e não ser adequado para um bot que precise ficar conectado continuamente.
 
-- `master/`: painel gráfico, API e armazenamento PostgreSQL.
-- `agent/`: serviço que se registra no Master e executa o runtime do bot.
-- `docker-compose.yml`: sobe banco, Master e Agent numa rede local compartilhada.
-- `.env.example`: modelo de configuração do Master.
+## Verificações locais
 
-## Importante sobre o Second Life
-
-O painel e a comunicação Master/Agent ficam funcionais localmente, mas o bot só poderá entrar no Second Life depois que você cadastrar as credenciais de uma conta de bot válida no painel e configurar os dados necessários. Não coloque senhas reais no código nem compartilhe o arquivo `.env`.
-
-A pesquisa global de avatares não é garantida por este pacote: a interface de controle de bots é diferente da busca global de pessoas do viewer oficial. Acesso a perfis e busca pública depende de APIs/fontes compatíveis e pode mudar.
-
-## Problemas comuns
-
-- Se o Master não iniciar, confira `docker compose logs -f master` e os três segredos do `.env`.
-- Se o Agent não aparecer, confira `docker compose logs -f agent` e se `MASTER_URL` está como `http://master:10000`.
-- Para reiniciar: `docker compose restart master agent`.
+Na pasta `master`: `npm test`
+Na pasta `agent`: `npm test`
