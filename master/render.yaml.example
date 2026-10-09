@@ -1,0 +1,2 @@
+# A implantação completa é definida pelo render.yaml na raiz do repositório.
+# Este serviço usa Root Directory = master, Build = npm install, Start = npm start.
