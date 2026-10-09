@@ -1,0 +1,19 @@
+{
+  "name": "sl-bot-agent-render-entrypoint",
+  "version": "1.0.1",
+  "private": true,
+  "description": "Root entrypoint for Render deployments when the service Root Directory is left blank.",
+  "main": "agent/agent.js",
+  "scripts": {
+    "start": "node agent/agent.js",
+    "test": "node --check agent/agent.js && node --check agent/botsl.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@caspertech/node-metaverse": "^0.8.6",
+    "dotenv": "^16.4.7",
+    "express": "^4.19.2"
+  }
+}
